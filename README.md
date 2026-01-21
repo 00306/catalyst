@@ -12,7 +12,7 @@ A Desktop GUI application for 3D visualization and analysis of GPC data using Py
 
 - **Language**: Python 3.10+
 - **GUI**: PyQt6
-- **Visualization**: Plotly, NumPy, Pandas
+- **Visualization**: PyQtGraph, NumPy, Pandas
 
 ## 📦 Installation
 
