@@ -1,6 +1,6 @@
 # GPC 3D Viewer (gpc-3d-viewer)
 
-A Desktop GUI application for 3D visualization and analysis of GPC data using PyQt6 and Plotly.
+A Desktop GUI application for 3D visualization and analysis of GPC data using PyQt6 and PyQtGraph.
 
 ## 🚀 Features
 
