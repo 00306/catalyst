@@ -1,0 +1,1 @@
+from .mwd_chart_widget import MWDChartWidget
