@@ -62,6 +62,7 @@ class MainWindow(QMainWindow):
 
         
         self.showMaximized()
+        self.setFocus()
 
     def apply_theme(self):
         qss = self.theme_manager.get_resolved_theme()

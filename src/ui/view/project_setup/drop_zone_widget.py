@@ -23,7 +23,7 @@ class DropZoneWidget(QFrame):
         self.icon_label = QLabel()
         self.icon_label.setFixedSize(64, 64)
         self.icon_label.setAlignment(Qt.AlignCenter)
-        self.icon_label.setStyleSheet("background: transparent;")
+        self.icon_label.setStyleSheet("background: transparent; margin-bottom: 20px;")
         
         self.main_text = QLabel("Drag & Drop .D folders here")
         self.main_text.setProperty("class", UI_TAG.TEXT_PRIMARY)
@@ -31,9 +31,11 @@ class DropZoneWidget(QFrame):
         self.sub_text = QLabel("or click to browse")
         self.sub_text.setProperty("class", UI_TAG.TEXT_SECONDARY)
         
+        layout.addStretch()
         layout.addWidget(self.icon_label, alignment=Qt.AlignCenter)
         layout.addWidget(self.main_text, alignment=Qt.AlignCenter)
         layout.addWidget(self.sub_text, alignment=Qt.AlignCenter)
+        layout.addStretch()
 
         self.apply_style("normal")
 
