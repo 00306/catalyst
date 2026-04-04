@@ -9,7 +9,9 @@ import ctypes
 
 
 if __name__ == "__main__":
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("catalyst.app")
+    if sys.platform == "win32":
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("catalyst.app")
+    
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
