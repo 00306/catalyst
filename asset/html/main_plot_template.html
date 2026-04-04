@@ -391,6 +391,8 @@
         var pkg = window.__TEMP_PLOT_DATA__;
         if (!pkg) return;
 
+        fitSquare();
+
         Promise.all([
           Plotly.react(
             gd_hm,
@@ -443,12 +445,25 @@
         ])
           .then(() => {
             fitSquare();
-            Plotly.Plots.resize(gd_sync_main);
-            Plotly.Plots.resize(gd_sync_top);
-            Plotly.Plots.resize(gd_sync_right);
-            Plotly.Plots.resize(gd_async_main);
-            Plotly.Plots.resize(gd_async_top);
-            Plotly.Plots.resize(gd_async_right);
+
+            requestAnimationFrame(function () {
+              [
+                gd_sync_main,
+                gd_sync_top,
+                gd_sync_right,
+                gd_async_main,
+                gd_async_top,
+                gd_async_right,
+              ].forEach(function (gd) {
+                if (gd && gd.data) Plotly.Plots.resize(gd);
+              });
+
+              requestAnimationFrame(function () {
+                if (typeof WebLoading !== "undefined") {
+                  WebLoading.hide();
+                }
+              });
+            });
 
             if (
               !window.isEventsAttached &&
@@ -456,9 +471,6 @@
             ) {
               attachPlotlyEvents();
               window.isEventsAttached = true;
-            }
-            if (typeof WebLoading !== "undefined") {
-              WebLoading.hide();
             }
           })
           .catch((err) => {
