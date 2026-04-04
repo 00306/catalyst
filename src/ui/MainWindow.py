@@ -8,7 +8,8 @@ from PyQt5.QtWidgets import QDesktopWidget
 from src.config.app_config import AppConfig
 from src.core.theme.tokens import UI_TAG
 from src.core.theme.theme_manager import ThemeManager
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QIcon
+from src.util.resource_path import resource_path
 
 
 class MainWindow(QMainWindow):
@@ -17,6 +18,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.theme_manager = ThemeManager()
         AppConfig.initialize()
+        self.setWindowIcon(QIcon(resource_path("asset/app_icon/catalyst_icon.png")))
         self.setMinimumSize(1280, 720)
 
         self.central_widget = QWidget()

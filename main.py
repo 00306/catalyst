@@ -5,10 +5,11 @@ from PyQt5.QtCore import Qt
 from src.ui.MainWindow import MainWindow
 from src.util.load_custom_fonts import load_custom_fonts
 from PyQt5.QtGui import QFont, QFontDatabase
-from src.util.resource_path import resource_path
+import ctypes
+
 
 if __name__ == "__main__":
-    
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("catalyst.app")
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
