@@ -56,14 +56,14 @@ class MainWindow(QMainWindow):
         self.left_panel.sig_theme_changed.connect(self.handle_theme_changed)
         self.setup_page.sig_setup_complete.connect(self.on_project_setup_complete)
         self.workspace_page.sig_project_updated.connect(self.left_panel.refresh_project_list)
-        
         self.theme_manager.theme_changed.connect(self.apply_theme, Qt.QueuedConnection)
 
     def apply_theme(self):
         qss = self.theme_manager.get_resolved_theme()
-        font_family = qss.get("font_family_main", "Pretendard")
+        font_family = qss.get("font_family_main", "Arial")
 
         app_font = QFont(font_family)
+        app_font.setHintingPreference(QFont.PreferNoHinting)
         QApplication.instance().setFont(app_font)
 
         qss_string = self.theme_manager.get_qss()

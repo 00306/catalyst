@@ -3,7 +3,7 @@ from PyQt5.QtGui import QFontDatabase
 
 def load_custom_fonts():
     font_files = [
-        "asset/font/LiberationSans-Regular.ttf",
+        "asset/font/Arimo-Regular.ttf",
     ]
     
     for relative_path in font_files:

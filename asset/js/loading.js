@@ -28,7 +28,7 @@ const WebLoading = {
         display: flex; justify-content: center; align-items: center;
         opacity: 1; transition: none;
       ">
-        <div style="text-align: center; font-family: 'Arial', sans-serif;">
+        <div style="text-align: center; font-family: "Arial", sans-serif, sans-serif;">
           <div class="spinner" style="
             border: 3px solid ${borderColor};
             border-left-color: ${accentColor};

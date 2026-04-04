@@ -120,7 +120,7 @@ class MWDChartWidget(QWidget):
                     top: 15px;
                     left: 20px;
                     color: {title_text};
-                    font-family: sans-serif;
+                    font-family: "Arial", sans-serif;
                     font-size: 16px;
                     font-weight: bold;
                     z-index: 10;

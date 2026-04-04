@@ -4,17 +4,21 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 from src.ui.MainWindow import MainWindow
 from src.util.load_custom_fonts import load_custom_fonts
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QFontDatabase
+from src.util.resource_path import resource_path
 
 if __name__ == "__main__":
     
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
     app = QApplication(sys.argv)
+
     font = QFont("Arial")
     font.setHintingPreference(QFont.PreferNoHinting)
+    font.setStyleStrategy(QFont.PreferAntialias | QFont.PreferQuality)
     app.setFont(font)
 
     load_custom_fonts()
@@ -33,6 +37,7 @@ if __name__ == "__main__":
 
     window = MainWindow()
     window.show()
+    window.setFocus()
     sys.exit(app.exec_())
 
 
