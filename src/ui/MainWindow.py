@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.theme_manager = ThemeManager()
         AppConfig.initialize()
-        self.showMaximized()
+        self.setMinimumSize(1280, 720)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -57,6 +57,9 @@ class MainWindow(QMainWindow):
         self.setup_page.sig_setup_complete.connect(self.on_project_setup_complete)
         self.workspace_page.sig_project_updated.connect(self.left_panel.refresh_project_list)
         self.theme_manager.theme_changed.connect(self.apply_theme, Qt.QueuedConnection)
+
+        
+        self.showMaximized()
 
     def apply_theme(self):
         qss = self.theme_manager.get_resolved_theme()
