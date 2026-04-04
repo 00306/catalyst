@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/qtproject/qtwebchannel@5.15.2/examples/webchannel/shared/qwebchannel.js"></script>
+
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: transparent;
+      }
+      #chart {
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chart"></div>
+
+    <script>
+      let plotEl = document.getElementById("chart");
+      let bridge = null;
+
+      window.updateChart = function (jsonData) {
+        const figure = JSON.parse(jsonData);
+
+        Plotly.react(plotEl, figure.data, figure.layout, {
+          displayModeBar: false,
+          scrollZoom: false,
+          responsive: true,
+        });
+
+        const themeConfig = figure.layout.meta || {};
+
+        if (window.initCrosshair) {
+          window.initCrosshair(plotEl, themeConfig);
+        }
+      };
+
+      new QWebChannel(qt.webChannelTransport, function (channel) {
+        window.plotBridge = channel.objects.plotBridge;
+
+        if (window.plotBridge) {
+          console.log("✅ [JS] plotBridge 객체 발견!", window.plotBridge);
+        } else {
+          console.error("❌ [JS] plotBridge 객체를 찾을 수 없음!");
+        }
+      });
+
+      // 크로스헤어 스크립트가 주입될 자리(지우지마셈)
+      /* CROSSHAIR_JS_PLACEHOLDER */
+    </script>
+  </body>
+</html>

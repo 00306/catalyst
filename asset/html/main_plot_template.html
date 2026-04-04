@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script type="text/javascript">
+      __PLOTLY_JS__;
+    </script>
+    <script
+      type="text/javascript"
+      src="qrc:///qtwebchannel/qwebchannel.js"
+    ></script>
+    <script type="text/javascript">
+      __WEB_LOADING_JS__;
+    </script>
+    <style>
+      body {
+        background-color: var(--bg-base) !important;
+        font-family: "Arial", sans-serif;
+        margin: 0;
+        padding: 0px;
+        display: flex;
+        gap: 15px;
+        height: 100vh;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .left-container {
+        flex: 0.45;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .right-container {
+        flex: 0.55;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .card {
+        background-color: var(--bg-card-secondary);
+        border: 1px solid var(--border-base);
+        border-radius: 12px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .card-title {
+        color: var(--text-accent);
+        font-weight: bold;
+        font-size: 11px;
+        padding: 12px 0 0 15px;
+        z-index: 10;
+      }
+      .plot-area {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      function applyTheme(themeObj) {
+        for (const [key, value] of Object.entries(themeObj)) {
+          const cssVarName = "--" + key.replace(/_/g, "-");
+          document.documentElement.style.setProperty(cssVarName, value);
+        }
+      }
+
+      const currentTheme = __THEME_JSON__;
+      applyTheme(currentTheme);
+      WebLoading.init(currentTheme);
+    </script>
+    <div class="left-container">
+      <div class="card" style="flex: 0.52">
+        <div class="card-title">GPC HEATMAP</div>
+        <div id="plot_hm" class="plot-area"></div>
+      </div>
+      <div
+        class="card"
+        style="
+          flex: 0.48;
+          display: flex;
+          flex-direction: row;
+          gap: 5px;
+          padding: 5px;
+        "
+      >
+        <div
+          style="
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+          "
+        >
+          <div class="card-title" style="padding-left: 10px; flex-shrink: 0">
+            COS SYNC
+          </div>
+          <div
+            style="
+              flex: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 0;
+              padding: 5px;
+            "
+          >
+            <div
+              style="
+                width: 100%;
+                height: 100%;
+                max-width: 100%;
+                max-height: 100%;
+                aspect-ratio: 1 / 1;
+              "
+            >
+              <div id="plot_sync" class="plot-area"></div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+          "
+        >
+          <div class="card-title" style="padding-left: 10px; flex-shrink: 0">
+            COS ASYNC
+          </div>
+          <div
+            style="
+              flex: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 0;
+              padding: 5px;
+            "
+          >
+            <div
+              style="
+                width: 100%;
+                height: 100%;
+                max-width: 100%;
+                max-height: 100%;
+                aspect-ratio: 1 / 1;
+              "
+            >
+              <div id="plot_async" class="plot-area"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="right-container card">
+      <div class="card-title">3D CHROMATOGRAM</div>
+      <div id="plot_3d" class="plot-area"></div>
+    </div>
+    <script>
+      function getConfig(filename, width, height) {
+        return {
+          displaylogo: false,
+          scrollZoom: false,
+          responsive: true,
+          modeBarButtonsToAdd: [
+            {
+              name: "Capture",
+              icon: Plotly.Icons.camera,
+              click: function (gd) {
+                if (gd._fullLayout && gd._fullLayout.scene) {
+                  var currentCamera = gd._fullLayout.scene._scene.getCamera();
+                  Plotly.relayout(gd, { "scene.camera": currentCamera }).then(
+                    function () {
+                      setTimeout(function () {
+                        Plotly.downloadImage(gd, {
+                          format: "png",
+                          filename: filename,
+                          scale: 4,
+                        });
+                      }, 500);
+                    }
+                  );
+                } else {
+                  Plotly.downloadImage(gd, {
+                    format: "png",
+                    filename: filename,
+                    scale: 4,
+                  });
+                }
+              },
+            },
+          ],
+          modeBarButtonsToRemove: [
+            "toImage",
+            "pan3d",
+            "zoom3d",
+            "select3d",
+            "lasso3d",
+            "hoverClosest3d",
+            "zoomIn3d",
+            "zoomOut3d",
+            "autoScale3d",
+            "zoomIn2d",
+            "zoomOut2d",
+            "autoScale2d",
+            "zoom2d",
+            "pan2d",
+            "resetScale2d",
+            "select2d",
+            "lasso2d",
+            "resetCameraDefault3d",
+          ],
+        };
+      }
+
+      new QWebChannel(qt.webChannelTransport, function (channel) {
+        window.pyBridge = channel.objects.pyBridge;
+      });
+
+      const gd_hm = document.getElementById("plot_hm");
+      const gd_3d = document.getElementById("plot_3d");
+      const gd_sync = document.getElementById("plot_sync");
+      const gd_async = document.getElementById("plot_async");
+
+      window.updateIntegrationRange = function (start_t, end_t) {
+        const update = {
+          "xaxis.range": [start_t, end_t],
+          "xaxis2.range": [start_t, end_t],
+          "yaxis2.range": [start_t, end_t],
+          "yaxis3.range": [start_t, end_t],
+          "yaxis4.range": [start_t, end_t],
+        };
+        Plotly.relayout(gd_sync, update);
+        Plotly.relayout(gd_async, update);
+      };
+
+      window.updateCosData = function (
+        new_time_axis,
+        new_sync_z,
+        new_async_z,
+        sync_limit,
+        async_limit,
+        max_1d_height,
+        new_avg_z
+      ) {
+        const start_t = new_time_axis[0];
+        const end_t = new_time_axis[new_time_axis.length - 1];
+
+        Plotly.restyle(
+          gd_sync,
+          {
+            x: [new_time_axis],
+            y: [new_time_axis],
+            z: [new_sync_z],
+            zmin: [-sync_limit],
+            zmax: [sync_limit],
+          },
+          [0]
+        );
+        Plotly.restyle(
+          gd_async,
+          {
+            x: [new_time_axis],
+            y: [new_time_axis],
+            z: [new_async_z],
+            zmin: [-async_limit],
+            zmax: [async_limit],
+          },
+          [0]
+        );
+
+        const update1D = { x: [new_time_axis], y: [new_avg_z] };
+        const update1D_Right = { x: [new_avg_z], y: [new_time_axis] };
+
+        Plotly.restyle(gd_sync, update1D, [1]);
+        Plotly.restyle(gd_sync, update1D_Right, [2]);
+        Plotly.restyle(gd_async, update1D, [1]);
+        Plotly.restyle(gd_async, update1D_Right, [2]);
+
+        const rangeUpdate = {
+          "xaxis.range": [start_t, end_t],
+          "xaxis2.range": [start_t, end_t],
+          "yaxis2.range": [start_t, end_t],
+          "yaxis3.range": [start_t, end_t],
+          "yaxis4.range": [start_t, end_t],
+          "yaxis.range": [0, max_1d_height],
+          "xaxis3.range": [0, max_1d_height],
+        };
+
+        Plotly.relayout(gd_sync, rangeUpdate);
+        Plotly.relayout(gd_async, rangeUpdate);
+      };
+
+      let isInitialized = false;
+
+      window.loadDataScript = function (theme, script_url) {
+        try {
+          if (typeof applyTheme === "function") {
+            applyTheme(theme);
+          }
+        } catch (e) {
+          alert("🚨 applyTheme 에러 발생: " + e);
+        }
+
+        var script = document.createElement("script");
+        script.src = script_url;
+
+        script.onload = function () {
+          var pkg = window.__TEMP_PLOT_DATA__;
+          if (!pkg) {
+            return;
+          }
+
+          Promise.all([
+            Plotly.react(
+              gd_hm,
+              pkg.hm.data,
+              pkg.hm.layout,
+              getConfig("heatmap_result")
+            ),
+            Plotly.react(
+              gd_3d,
+              pkg.d3.data,
+              pkg.d3.layout,
+              getConfig("3d_surface")
+            ),
+            Plotly.react(
+              gd_sync,
+              pkg.sync.data,
+              pkg.sync.layout,
+              getConfig("sync_map")
+            ),
+            Plotly.react(
+              gd_async,
+              pkg.async.data,
+              pkg.async.layout,
+              getConfig("async_map")
+            ),
+          ])
+            .then(() => {
+              if (
+                !window.isEventsAttached &&
+                typeof attachPlotlyEvents === "function"
+              ) {
+                attachPlotlyEvents();
+                window.isEventsAttached = true;
+              }
+              if (typeof WebLoading !== "undefined") {
+                WebLoading.hide();
+              }
+            })
+            .catch((err) => {
+              alert("🚨 Plotly 렌더링 중 에러: " + err);
+            });
+        };
+
+        script.onerror = function () {
+          alert("❌ 파일 로드 실패! (Mac 보안에 막혔거나 경로가 틀림)");
+        };
+
+        document.head.appendChild(script);
+      };
+
+      function attachPlotlyEvents() {
+        gd_hm.on("plotly_hover", function (data) {
+          const px = data.points[0].x;
+          const py = data.points[0].y;
+          const crosshair = [
+            {
+              type: "line",
+              xref: "x domain",
+              yref: "y",
+              x0: 0,
+              y0: py,
+              x1: 1,
+              y1: py,
+              line: { color: "white", width: 1, dash: "dot" },
+            },
+            {
+              type: "line",
+              xref: "x",
+              yref: "y domain",
+              x0: px,
+              y0: 0,
+              x1: px,
+              y1: 1,
+              line: { color: "white", width: 1, dash: "dot" },
+            },
+          ];
+          Plotly.relayout(gd_hm, { shapes: crosshair });
+        });
+
+        gd_hm.on("plotly_unhover", function (data) {
+          Plotly.relayout(gd_hm, { shapes: [] });
+        });
+
+        gd_3d.on("plotly_click", function (data) {
+          var clickedName = data.points[0].fullData.name;
+          if (window.pyBridge) {
+            window.pyBridge.receive_sample_name(clickedName);
+          }
+        });
+
+        gd_3d.on("plotly_afterplot", function () {
+          requestAnimationFrame(() => {
+            WebLoading.hide();
+          });
+        });
+
+        gd_3d.on("plotly_hover", function (data) {
+          const px = data.points[0].x;
+          const py = data.points[0].y;
+          const crosshair = [
+            {
+              type: "line",
+              xref: "x domain",
+              yref: "y",
+              x0: 0,
+              y0: py,
+              x1: 1,
+              y1: py,
+              line: { color: "white", width: 1, dash: "dot" },
+            },
+            {
+              type: "line",
+              xref: "x",
+              yref: "y domain",
+              x0: px,
+              y0: 0,
+              x1: px,
+              y1: 1,
+              line: { color: "white", width: 1, dash: "dot" },
+            },
+          ];
+          Plotly.relayout(gd_hm, { shapes: crosshair });
+        });
+
+        gd_3d.on("plotly_unhover", function (data) {
+          Plotly.relayout(gd_hm, { shapes: [] });
+        });
+      }
+    </script>
+  </body>
+</html>
