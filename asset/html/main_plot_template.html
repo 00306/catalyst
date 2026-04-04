@@ -75,13 +75,12 @@
         grid-template-columns: 1fr 20px;
         grid-template-rows: 20px 1fr;
         gap: 0px;
-        width: 100%;
-        height: 100%;
+        margin: auto;
+        overflow: hidden;
       }
       .cos-grid .main {
         grid-column: 1;
         grid-row: 2;
-        aspect-ratio: 1 / 1;
       }
       .cos-grid .top {
         grid-column: 1;
@@ -119,8 +118,10 @@
           flex-direction: row;
           gap: 5px;
           padding: 5px;
+          overflow: hidden;
         "
       >
+        <!-- COS SYNC -->
         <div
           style="
             flex: 1;
@@ -134,16 +135,16 @@
             COS SYNC
           </div>
           <div
+            id="sync_container"
             style="
               flex: 1;
-              display: flex;
-              align-items: center;
-              justify-content: center;
               min-height: 0;
+              position: relative;
+              overflow: hidden;
               padding: 5px;
             "
           >
-            <div class="cos-grid">
+            <div class="cos-grid" id="sync_grid">
               <div id="plot_sync_top" class="top"></div>
               <div style="grid-column: 2; grid-row: 1"></div>
               <div id="plot_sync_main" class="main"></div>
@@ -166,16 +167,16 @@
             COS ASYNC
           </div>
           <div
+            id="async_container"
             style="
               flex: 1;
-              display: flex;
-              align-items: center;
-              justify-content: center;
               min-height: 0;
+              position: relative;
+              overflow: hidden;
               padding: 5px;
             "
           >
-            <div class="cos-grid">
+            <div class="cos-grid" id="async_grid">
               <div id="plot_async_top" class="top"></div>
               <div style="grid-column: 2; grid-row: 1"></div>
               <div id="plot_async_main" class="main"></div>
@@ -441,6 +442,14 @@
           ),
         ])
           .then(() => {
+            fitSquare();
+            Plotly.Plots.resize(gd_sync_main);
+            Plotly.Plots.resize(gd_sync_top);
+            Plotly.Plots.resize(gd_sync_right);
+            Plotly.Plots.resize(gd_async_main);
+            Plotly.Plots.resize(gd_async_top);
+            Plotly.Plots.resize(gd_async_right);
+
             if (
               !window.isEventsAttached &&
               typeof attachPlotlyEvents === "function"
@@ -531,6 +540,55 @@
           Plotly.relayout(gd_hm, { shapes: [] });
         });
       }
+
+      function fitSquare() {
+        ["sync_container", "async_container"].forEach(function (id) {
+          var container = document.getElementById(id);
+          if (!container) return;
+          var grid = container.querySelector(".cos-grid");
+          var w = container.clientWidth - 10;
+          var h = container.clientHeight - 10;
+          var size = Math.min(w, h);
+          grid.style.width = size + "px";
+          grid.style.height = size + "px";
+
+          // Plotly div들에도 직접 크기 강제
+          var mainDiv = grid.querySelector(".main");
+          var topDiv = grid.querySelector(".top");
+          var rightDiv = grid.querySelector(".right");
+          var mainSize = size - 20; // grid-template-rows: 20px 1fr
+          if (mainDiv) {
+            mainDiv.style.width = mainSize + "px";
+            mainDiv.style.height = mainSize + "px";
+            mainDiv.style.maxHeight = mainSize + "px";
+            mainDiv.style.overflow = "hidden";
+          }
+          if (topDiv) {
+            topDiv.style.width = mainSize + "px";
+            topDiv.style.height = "20px";
+            topDiv.style.maxHeight = "20px";
+            topDiv.style.overflow = "hidden";
+          }
+          if (rightDiv) {
+            rightDiv.style.width = "20px";
+            rightDiv.style.height = mainSize + "px";
+            rightDiv.style.maxHeight = mainSize + "px";
+            rightDiv.style.overflow = "hidden";
+          }
+
+          console.log(id + " main forced: " + mainSize + "x" + mainSize);
+        });
+      }
+
+      window.addEventListener("resize", function () {
+        fitSquare();
+        Plotly.Plots.resize(gd_sync_main);
+        Plotly.Plots.resize(gd_sync_top);
+        Plotly.Plots.resize(gd_sync_right);
+        Plotly.Plots.resize(gd_async_main);
+        Plotly.Plots.resize(gd_async_top);
+        Plotly.Plots.resize(gd_async_right);
+      });
     </script>
   </body>
 </html>
