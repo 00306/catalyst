@@ -2,8 +2,26 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/qtproject/qtwebchannel@5.15.2/examples/webchannel/shared/qwebchannel.js"></script>
+    <script type="text/javascript">
+    (function() {
+        var origInsertRule = CSSStyleSheet.prototype.insertRule;
+        CSSStyleSheet.prototype.insertRule = function(rule, index) {
+            try {
+                return origInsertRule.call(this, rule, index);
+            } catch(e) {
+                console.warn("CSS rule skipped: " + rule.substring(0, 50));
+                return -1;
+            }
+        };
+    })();
+    </script>
+    <script type="text/javascript">
+      __PLOTLY_JS__;
+    </script>
+    <script
+      type="text/javascript"
+      src="qrc:///qtwebchannel/qwebchannel.js"
+    ></script>
 
     <style>
       body,

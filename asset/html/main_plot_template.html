@@ -3,6 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <script type="text/javascript">
+    (function() {
+        var origInsertRule = CSSStyleSheet.prototype.insertRule;
+        CSSStyleSheet.prototype.insertRule = function(rule, index) {
+            try {
+                return origInsertRule.call(this, rule, index);
+            } catch(e) {
+                console.warn("CSS rule skipped: " + rule.substring(0, 50));
+                return -1;
+            }
+        };
+    })();
+    </script>
+    <script type="text/javascript">
       __PLOTLY_JS__;
     </script>
     <script
@@ -304,70 +317,78 @@
       window.loadDataScript = function (theme, script_url) {
         try {
           if (typeof applyTheme === "function") {
+            console.log("theme 적용 중");
             applyTheme(theme);
           }
         } catch (e) {
           alert("🚨 applyTheme 에러 발생: " + e);
         }
 
-        var script = document.createElement("script");
-        script.src = script_url;
-
-        script.onload = function () {
-          var pkg = window.__TEMP_PLOT_DATA__;
-          if (!pkg) {
-            return;
-          }
-
-          Promise.all([
-            Plotly.react(
-              gd_hm,
-              pkg.hm.data,
-              pkg.hm.layout,
-              getConfig("heatmap_result")
-            ),
-            Plotly.react(
-              gd_3d,
-              pkg.d3.data,
-              pkg.d3.layout,
-              getConfig("3d_surface")
-            ),
-            Plotly.react(
-              gd_sync,
-              pkg.sync.data,
-              pkg.sync.layout,
-              getConfig("sync_map")
-            ),
-            Plotly.react(
-              gd_async,
-              pkg.async.data,
-              pkg.async.layout,
-              getConfig("async_map")
-            ),
-          ])
-            .then(() => {
-              if (
-                !window.isEventsAttached &&
-                typeof attachPlotlyEvents === "function"
-              ) {
-                attachPlotlyEvents();
-                window.isEventsAttached = true;
-              }
-              if (typeof WebLoading !== "undefined") {
-                WebLoading.hide();
-              }
-            })
-            .catch((err) => {
-              alert("🚨 Plotly 렌더링 중 에러: " + err);
-            });
-        };
-
-        script.onerror = function () {
-          alert("❌ 파일 로드 실패! (Mac 보안에 막혔거나 경로가 틀림)");
-        };
-
-        document.head.appendChild(script);
+        if (script_url) {
+          var script = document.createElement("script");
+          console.log("스크립트 찾음 적용 중");
+          script.src = script_url;
+          script.onload = function () {
+            console.log("그래프 적용 중2");
+            renderPlots();
+          };
+          script.onerror = function () {
+            alert("❌ 파일 로드 실패!");
+          };
+          document.head.appendChild(script);
+        } else {
+          console.log("그래프 그리는중");
+          renderPlots();
+        }
       };
+
+      function renderPlots() {
+        var pkg = window.__TEMP_PLOT_DATA__;
+
+        if (!pkg) return;
+
+        Promise.all([
+          Plotly.react(
+            gd_hm,
+            pkg.hm.data,
+            pkg.hm.layout,
+            getConfig("heatmap_result")
+          ),
+          Plotly.react(
+            gd_3d,
+            pkg.d3.data,
+            pkg.d3.layout,
+            getConfig("3d_surface")
+          ),
+          Plotly.react(
+            gd_sync,
+            pkg.sync.data,
+            pkg.sync.layout,
+            getConfig("sync_map")
+          ),
+          Plotly.react(
+            gd_async,
+            pkg.async.data,
+            pkg.async.layout,
+            getConfig("async_map")
+          ),
+        ])
+          .then(() => {
+            if (
+              !window.isEventsAttached &&
+              typeof attachPlotlyEvents === "function"
+            ) {
+              attachPlotlyEvents();
+              window.isEventsAttached = true;
+            }
+            if (typeof WebLoading !== "undefined") {
+              WebLoading.hide();
+            }
+          })
+          .catch((err) => {
+            console.log("❌ Plotly 렌더링 에러: " + err);
+          });
+      }
 
       function attachPlotlyEvents() {
         gd_hm.on("plotly_hover", function (data) {

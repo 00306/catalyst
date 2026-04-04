@@ -1,12 +1,14 @@
 from PyQt5.QtWidgets import QFrame, QScrollArea, QWidget, QVBoxLayout, QLabel
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebChannel import QWebChannel
-from PyQt5.QtCore import Qt, QEvent, QTimer, pyqtSignal, QCoreApplication
+from PyQt5.QtCore import Qt, QEvent, QTimer, pyqtSignal, QCoreApplication, QUrl
 from src.ui.builder.chromatogram_plot_builder import ChromatogramPlotBuilder
 from src.bridge.plot_interaction_bridge import PlotInteractionBridge
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from src.core.theme.tokens import UI_TAG
+import tempfile, os
 from src.util.resource_path import resource_path
+from plotly.offline import get_plotlyjs
 
 class CustomWebPage(QWebEnginePage):
     def javaScriptConsoleMessage(self, level, msg, line, sourceID):
@@ -106,15 +108,24 @@ class ChromatogramWidget(QWidget):
         self.browser.page().runJavaScript(script)
 
     def _load_base_html(self):
+
+        plotly_js = get_plotlyjs()
+
         with open(resource_path("asset/html/chromatogram_plot_template.html"), 'r', encoding='utf-8') as f:
             html_content = f.read()
 
+
         with open(resource_path("asset/js/crosshair.js"), 'r', encoding='utf-8') as f:
             js_content = f.read()
+
+        html = html_content.replace("__PLOTLY_JS__", plotly_js)
+        final_html = html.replace("/* CROSSHAIR_JS_PLACEHOLDER */", js_content)
         
-        final_html = html_content.replace("/* CROSSHAIR_JS_PLACEHOLDER */", js_content)
-        
-        self.browser.setHtml(final_html)
+        tmp_path = os.path.join(tempfile.gettempdir(), "chromatogram_plot.html")
+        with open(tmp_path, 'w', encoding='utf-8') as f:
+            f.write(final_html)
+
+        self.browser.setUrl(QUrl.fromLocalFile(tmp_path))
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Wheel:

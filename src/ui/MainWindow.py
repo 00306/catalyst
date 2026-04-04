@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.theme_manager = ThemeManager()
         AppConfig.initialize()
-        self.showFullScreen()
+        self.showMaximized()
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)

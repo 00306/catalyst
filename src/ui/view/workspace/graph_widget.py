@@ -15,6 +15,11 @@ from src.ui.view.dialog.file_dialog import FileDialog
 from src.core.theme.tokens import UI_TAG
 from src.core.theme.theme_manager import ThemeManager
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
+from PyQt5.QtWebEngineWidgets import QWebEnginePage
+
+class CustomWebPage(QWebEnginePage):
+    def javaScriptConsoleMessage(self, level, msg, line, sourceID):
+        print(f"JS Console: {msg} (line {line})")
 
 class GraphWidget(QWidget):
     sig_render_finish = pyqtSignal()
@@ -43,6 +48,8 @@ class GraphWidget(QWidget):
 
 
         self.browser = QWebEngineView()
+        self.custom_page = CustomWebPage(self.browser)
+        self.browser.setPage(self.custom_page)
         self.browser.page().setBackgroundColor(Qt.transparent)
         settings = self.browser.settings()
         settings.setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls, True)
@@ -214,29 +221,27 @@ class GraphWidget(QWidget):
 
     def _execute_render(self, pkg):
         try:
-            data_to_save = {
+            theme_json = json.dumps(pkg['theme'])
+            
+            data_json = json.dumps({
                 "hm": pkg['hm'],
                 "d3": pkg['d3'],
                 "sync": pkg['sync'],
                 "async": pkg['async']
-            }
-            json_string = json.dumps(data_to_save)
+            })
 
-            js_content = f"window.__TEMP_PLOT_DATA__ = {json_string};"
+            temp_dir = tempfile.gettempdir()
+            data_path = os.path.join(temp_dir, f"plot_data_{id(self)}.js")
+            
+            with open(data_path, "w", encoding="utf-8") as f:
+                f.write(f"window.__TEMP_PLOT_DATA__ = {data_json};")
 
-            temp_file_path = os.path.join(tempfile.gettempdir(), f"plot_data_{id(self)}.js")
-            with open(temp_file_path, "w", encoding="utf-8") as f:
-                f.write(js_content)
-
-            file_url = QUrl.fromLocalFile(os.path.abspath(temp_file_path)).toString()
-
-            theme_json = json.dumps(pkg['theme'])
+            file_url = QUrl.fromLocalFile(os.path.abspath(data_path)).toString()
             script = f"window.loadDataScript({theme_json}, '{file_url}');"
-
             self.browser.page().runJavaScript(script)
 
         except Exception as e:
-            print(f"❌ 데이터 파일 생성 중 오류 발생: {e}")
+            print(f"❌ 데이터 렌더링 중 오류 발생: {e}")
             import traceback
             traceback.print_exc()
 

@@ -2,10 +2,9 @@ import json
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from plotly.offline import get_plotlyjs
 from src.core.preprocessor import apply_gaussian_smoothing, normalize_min_max
 from src.util.resource_path import resource_path
-
+from plotly.offline import get_plotlyjs
 
 class MainPlotBuilder:
     def __init__(self, theme, graph_theme):
@@ -456,6 +455,7 @@ class MainPlotBuilder:
         fig.update_xaxes(
             **main_axis_config,
             title=dict(text="Retention Time (min)", font=dict(size=10, color=self.graph_theme["text"])),
+            
             row=2, col=1
         )
 

@@ -1,12 +1,13 @@
 import plotly.graph_objects as go
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
-from PyQt5.QtCore import QEvent, QTimer, Qt, QCoreApplication
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import QEvent, QTimer, Qt, QCoreApplication, QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import numpy as np
+import os
+import tempfile
 from src.core.theme.theme_manager import ThemeManager
-from src.core.theme.tokens import UI_TAG
+from plotly.offline import get_plotlyjs
 
 class DebugWebPage(QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
@@ -78,11 +79,28 @@ class MWDChartWidget(QWidget):
         border = self.current_graph_theme["border"]
         title_text = self.current_graph_theme["text_accent"]
 
+        plotly_js = get_plotlyjs()
+
         base_html = f"""
         <!DOCTYPE html>
         <html>
         <head>
-            <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+        <script type="text/javascript">
+            (function() {{
+                var origInsertRule = CSSStyleSheet.prototype.insertRule;
+                CSSStyleSheet.prototype.insertRule = function(rule, index) {{
+                    try {{
+                        return origInsertRule.call(this, rule, index);
+                    }} catch(e) {{
+                        console.warn("CSS rule skipped: " + rule.substring(0, 50));
+                        return -1;
+                    }}
+                }};
+            }})();
+            </script>
+            <script type="text/javascript">
+            __PLOTLY_JS__;
+            </script>
             <style>
                 body, html {{ margin: 0; padding: 0; width: 100%; height: 100%; background-color: {bg_base}; }}
                 #plot {{ 
@@ -147,7 +165,13 @@ class MWDChartWidget(QWidget):
         </body>
         </html>
         """
-        self.browser.setHtml(base_html)
+
+        base_html = base_html.replace("__PLOTLY_JS__", plotly_js)
+
+        tmp_path = os.path.join(tempfile.gettempdir(), f"mwd_plot_{id(self)}.html")
+        with open(tmp_path, 'w', encoding='utf-8') as f:
+            f.write(base_html)
+        self.browser.setUrl(QUrl.fromLocalFile(tmp_path))
 
     def _on_load_finished(self, ok):
             if ok:
