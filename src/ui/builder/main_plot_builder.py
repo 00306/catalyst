@@ -98,15 +98,19 @@ class MainPlotBuilder:
         
         fig_hm = self._build_heatmap_figure(ctx)
         fig_3d = self._build_3d_figure(ctx)
-        fig_sync = self._build_cos_figure(ctx, is_sync=True)
-        fig_async = self._build_cos_figure(ctx, is_sync=False)
+        cos_sync = self._build_cos_figure(ctx, is_sync=True)
+        cos_async = self._build_cos_figure(ctx, is_sync=False)
 
         package = {
             "theme": self.graph_theme,
             "hm": json.loads(fig_hm.to_json()),
             "d3": json.loads(fig_3d.to_json()),
-            "sync": json.loads(fig_sync.to_json()),
-            "async": json.loads(fig_async.to_json())
+            "sync_main": json.loads(cos_sync["main"].to_json()),
+            "sync_top": json.loads(cos_sync["top"].to_json()),
+            "sync_right": json.loads(cos_sync["right"].to_json()),
+            "async_main": json.loads(cos_async["main"].to_json()),
+            "async_top": json.loads(cos_async["top"].to_json()),
+            "async_right": json.loads(cos_async["right"].to_json()),
         }
 
         return package
@@ -146,9 +150,13 @@ class MainPlotBuilder:
     def _build_cos_figure(self, ctx, is_sync=True):
         cos_traces = self._create_contour_traces()
         trace = cos_traces[0] if is_sync else (cos_traces[1] if len(cos_traces) > 1 else None)
-        fig = self.create_cos_subplot_grid(trace)
-        self._apply_layout_cos_grid(fig, *ctx["t_range"], is_sync=is_sync)
-        return fig
+
+        min_t, max_t = ctx["t_range"]
+        fig_main = self._build_cos_main(trace, min_t, max_t)
+        fig_top = self._build_cos_top(min_t, max_t)
+        fig_right = self._build_cos_right(min_t, max_t)
+    
+        return {"main": fig_main, "top": fig_top, "right": fig_right}
     
     def _process_data(self):
         cur_X = np.copy(self.X)
@@ -338,28 +346,6 @@ class MainPlotBuilder:
 
         return traces
     
-    def create_cos_subplot_grid(self, contour_trace):
-        fig = make_subplots(
-            rows = 2, cols = 2,
-            column_widths=[0.95, 0.05],
-            row_heights=[0.05, 0.95],
-            vertical_spacing=0.02,
-            horizontal_spacing=0.02,
-            specs=[
-            [{"type": "xy"},           None],         
-            [{"type": "contour"},      {"type": "xy"}]
-            ],
-            shared_xaxes=True,
-            shared_yaxes=True
-            )
-        
-        fig.add_trace(contour_trace, row=2, col=1)
-        fig.add_trace(self._create_marginal_line(position="top"), row=1, col=1)
-        fig.add_trace(self._create_marginal_line(position="right"), row=2, col=2)
-
-
-        return fig
-    
     def _apply_common_style(self, fig):
         fig.update_layout(
             paper_bgcolor="rgba(0,0,0,0)",
@@ -374,6 +360,30 @@ class MainPlotBuilder:
             )
 
         )
+
+    def _build_cos_top(self, min_t, max_t):
+        fig = go.Figure(data=[self._create_marginal_line("top")])
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            showlegend=False,
+            margin=dict(l=50, r=5, t=0, b=0, pad=0),
+            xaxis=dict(range=[min_t, max_t], visible=False),
+            yaxis=dict(range=[0, np.max(self.avg_Z) * 1.1], visible=False),
+        )
+        return fig
+
+    def _build_cos_right(self, min_t, max_t):
+        fig = go.Figure(data=[self._create_marginal_line("right")])
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            showlegend=False,
+            margin=dict(l=0, r=0, t=5, b=50, pad=0),
+            xaxis=dict(range=[0, np.max(self.avg_Z) * 1.1], visible=False),
+            yaxis=dict(range=[min_t, max_t], visible=False),
+        )
+        return fig
     
     def _apply_layout_3d(self, fig, y_positions, y_labels):
         self._apply_common_style(fig)
@@ -428,96 +438,52 @@ class MainPlotBuilder:
                     ticktext=y_labels),
             dragmode=False,
         )
-    def _apply_layout_cos_grid(self, fig, min_t, max_t, is_sync=True):
-        self._apply_common_style(fig)
+
+    def _build_cos_main(self, contour_trace, min_t, max_t):
         grid_color = self.graph_theme["grid_line"]
         axis_color = self.graph_theme["axis_line"]
 
-        main_axis_config = dict(
-            showgrid=True, 
-            range=[min_t, max_t],
-            gridcolor=grid_color,
-            autorange=False,
-            dtick=10,
-            nticks=15,
-            ticks="inside",
-            showline=True,
-            tickmode="auto",
-            linewidth=1,
-            tickwidth=1,
-            tickfont=dict(size=12, color=self.graph_theme["text"]),
-            linecolor=axis_color,
-            mirror="ticks",
-            zeroline=False,
-            constrain="domain",
-        )
-
-        fig.update_xaxes(
-            **main_axis_config,
-            title=dict(text="Retention Time (min)", font=dict(size=10, color=self.graph_theme["text"])),
-            
-            row=2, col=1
-        )
-
-        fig.update_yaxes(
-            **main_axis_config,
-            title=dict(text="Retention Time (min)", font=dict(size=10, color=self.graph_theme["text"])),
-            scaleanchor="x2",
-            scaleratio=1,
-            
-            row=2, col=1
-        )
-
-        fig.update_xaxes(
-            range=[min_t, max_t],
-            visible=False,
-            showgrid=False, showticklabels=False, 
-            linecolor=axis_color, linewidth=1, mirror=False,
-            row=1, col=1
-        )
-        fig.update_yaxes(
-            showgrid=False, showticklabels=False,
-            visible=False,
-            linecolor=axis_color,
-            range=[0, np.max(self.avg_Z) * 1.1],
-            row=1, col=1,
-            automargin=False
-        )
-
-        fig.update_xaxes(
-            showgrid=False, showticklabels=False,
-            linecolor=axis_color,
-            visible=False,
-            automargin=False,
-            range=[0, np.max(self.avg_Z) * 1.1],
-            row=2, col=2
-        )
-        fig.update_yaxes(
-            range=[min_t, max_t],
-            showgrid=False, showticklabels=False, 
-            visible=False,
-            automargin=False,
-            linecolor=axis_color, linewidth=1, mirror=False,
-            row=2, col=2
-        )
-
+        fig = go.Figure(data=[contour_trace])
         fig.update_layout(
-            dragmode=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Arial, Helvetica, sans-serif", size=10, color=self.graph_theme["text"]),
             showlegend=False,
-            plot_bgcolor='rgba(0,0,0,0)',
-            margin=dict(l=0, r=0, t=0, b=0, pad=0),
-            hoverdistance=100,
-            
+            dragmode=False,
+            margin=dict(l=50, r=5, t=5, b=50, pad=0),
+            modebar=dict(
+                bgcolor='rgba(0,0,0,0)',
+                color=self.theme["text_primary"],
+                activecolor=self.theme["text_accent"],
+            ),
+            xaxis=dict(
+                range=[min_t, max_t], autorange=False,
+                showgrid=True, gridcolor=grid_color,
+                dtick=10, nticks=15, ticks="inside",
+                showline=True, linewidth=1, linecolor=axis_color,
+                tickmode="auto", tickwidth=1,
+                tickfont=dict(size=12, color=self.graph_theme["text"]),
+                mirror="ticks", zeroline=False,
+                title=dict(text="Retention Time (min)", font=dict(size=10, color=self.graph_theme["text"])),
+            ),
+            yaxis=dict(
+                range=[min_t, max_t], autorange=False,
+                showgrid=True, gridcolor=grid_color,
+                dtick=10, nticks=15, ticks="inside",
+                showline=True, linewidth=1, linecolor=axis_color,
+                tickmode="auto", tickwidth=1,
+                tickfont=dict(size=12, color=self.graph_theme["text"]),
+                mirror="ticks", zeroline=False,
+                title=dict(text="Retention Time (min)", font=dict(size=10, color=self.graph_theme["text"])),
+            ),
             shapes=[
                 dict(
                     type="line",
-                    xref="x2", yref="y2",
-                    x0=min_t, y0=min_t,
-                    x1=max_t, y1=max_t,
+                    x0=min_t, y0=min_t, x1=max_t, y1=max_t,
                     line=dict(color=self.graph_theme["text"], width=0.5, dash="2px 2px"),
                     layer="above"
                 ),
             ]
         )
-        
         return fig
+

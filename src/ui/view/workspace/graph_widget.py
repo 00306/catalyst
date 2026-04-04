@@ -226,8 +226,12 @@ class GraphWidget(QWidget):
             data_json = json.dumps({
                 "hm": pkg['hm'],
                 "d3": pkg['d3'],
-                "sync": pkg['sync'],
-                "async": pkg['async']
+                "sync_main": pkg['sync_main'],
+                "sync_top": pkg['sync_top'],
+                "sync_right": pkg['sync_right'],
+                "async_main": pkg['async_main'],
+                "async_top": pkg['async_top'],
+                "async_right": pkg['async_right'],
             })
 
             temp_dir = tempfile.gettempdir()

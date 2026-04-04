@@ -3,17 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <script type="text/javascript">
-    (function() {
+      (function () {
         var origInsertRule = CSSStyleSheet.prototype.insertRule;
-        CSSStyleSheet.prototype.insertRule = function(rule, index) {
-            try {
-                return origInsertRule.call(this, rule, index);
-            } catch(e) {
-                console.warn("CSS rule skipped: " + rule.substring(0, 50));
-                return -1;
-            }
+        CSSStyleSheet.prototype.insertRule = function (rule, index) {
+          try {
+            return origInsertRule.call(this, rule, index);
+          } catch (e) {
+            console.warn("CSS rule skipped: " + rule.substring(0, 50));
+            return -1;
+          }
         };
-    })();
+      })();
     </script>
     <script type="text/javascript">
       __PLOTLY_JS__;
@@ -70,6 +70,27 @@
         width: 100%;
         height: 100%;
       }
+      .cos-grid {
+        display: grid;
+        grid-template-columns: 1fr 20px;
+        grid-template-rows: 20px 1fr;
+        gap: 0px;
+        width: 100%;
+        height: 100%;
+      }
+      .cos-grid .main {
+        grid-column: 1;
+        grid-row: 2;
+        aspect-ratio: 1 / 1;
+      }
+      .cos-grid .top {
+        grid-column: 1;
+        grid-row: 1;
+      }
+      .cos-grid .right {
+        grid-column: 2;
+        grid-row: 2;
+      }
     </style>
   </head>
   <body>
@@ -122,20 +143,16 @@
               padding: 5px;
             "
           >
-            <div
-              style="
-                width: 100%;
-                height: 100%;
-                max-width: 100%;
-                max-height: 100%;
-                aspect-ratio: 1 / 1;
-              "
-            >
-              <div id="plot_sync" class="plot-area"></div>
+            <div class="cos-grid">
+              <div id="plot_sync_top" class="top"></div>
+              <div style="grid-column: 2; grid-row: 1"></div>
+              <div id="plot_sync_main" class="main"></div>
+              <div id="plot_sync_right" class="right"></div>
             </div>
           </div>
         </div>
 
+        <!-- COS ASYNC -->
         <div
           style="
             flex: 1;
@@ -158,16 +175,11 @@
               padding: 5px;
             "
           >
-            <div
-              style="
-                width: 100%;
-                height: 100%;
-                max-width: 100%;
-                max-height: 100%;
-                aspect-ratio: 1 / 1;
-              "
-            >
-              <div id="plot_async" class="plot-area"></div>
+            <div class="cos-grid">
+              <div id="plot_async_top" class="top"></div>
+              <div style="grid-column: 2; grid-row: 1"></div>
+              <div id="plot_async_main" class="main"></div>
+              <div id="plot_async_right" class="right"></div>
             </div>
           </div>
         </div>
@@ -234,25 +246,34 @@
         };
       }
 
+      var noBar = {
+        displayModeBar: false,
+        scrollZoom: false,
+        responsive: true,
+      };
+
       new QWebChannel(qt.webChannelTransport, function (channel) {
         window.pyBridge = channel.objects.pyBridge;
       });
 
       const gd_hm = document.getElementById("plot_hm");
       const gd_3d = document.getElementById("plot_3d");
-      const gd_sync = document.getElementById("plot_sync");
-      const gd_async = document.getElementById("plot_async");
+      const gd_sync_main = document.getElementById("plot_sync_main");
+      const gd_sync_top = document.getElementById("plot_sync_top");
+      const gd_sync_right = document.getElementById("plot_sync_right");
+      const gd_async_main = document.getElementById("plot_async_main");
+      const gd_async_top = document.getElementById("plot_async_top");
+      const gd_async_right = document.getElementById("plot_async_right");
 
       window.updateIntegrationRange = function (start_t, end_t) {
-        const update = {
-          "xaxis.range": [start_t, end_t],
-          "xaxis2.range": [start_t, end_t],
-          "yaxis2.range": [start_t, end_t],
-          "yaxis3.range": [start_t, end_t],
-          "yaxis4.range": [start_t, end_t],
-        };
-        Plotly.relayout(gd_sync, update);
-        Plotly.relayout(gd_async, update);
+        var rangeX = { "xaxis.range": [start_t, end_t] };
+        var rangeY = { "yaxis.range": [start_t, end_t] };
+        Plotly.relayout(gd_sync_main, Object.assign({}, rangeX, rangeY));
+        Plotly.relayout(gd_sync_top, rangeX);
+        Plotly.relayout(gd_sync_right, rangeY);
+        Plotly.relayout(gd_async_main, Object.assign({}, rangeX, rangeY));
+        Plotly.relayout(gd_async_top, rangeX);
+        Plotly.relayout(gd_async_right, rangeY);
       };
 
       window.updateCosData = function (
@@ -264,11 +285,12 @@
         max_1d_height,
         new_avg_z
       ) {
-        const start_t = new_time_axis[0];
-        const end_t = new_time_axis[new_time_axis.length - 1];
+        var start_t = new_time_axis[0];
+        var end_t = new_time_axis[new_time_axis.length - 1];
 
+        // sync main
         Plotly.restyle(
-          gd_sync,
+          gd_sync_main,
           {
             x: [new_time_axis],
             y: [new_time_axis],
@@ -278,8 +300,32 @@
           },
           [0]
         );
+        Plotly.relayout(gd_sync_main, {
+          "xaxis.range": [start_t, end_t],
+          "yaxis.range": [start_t, end_t],
+        });
+
+        // sync top
+        Plotly.restyle(gd_sync_top, { x: [new_time_axis], y: [new_avg_z] }, [
+          0,
+        ]);
+        Plotly.relayout(gd_sync_top, {
+          "xaxis.range": [start_t, end_t],
+          "yaxis.range": [0, max_1d_height],
+        });
+
+        // sync right
+        Plotly.restyle(gd_sync_right, { x: [new_avg_z], y: [new_time_axis] }, [
+          0,
+        ]);
+        Plotly.relayout(gd_sync_right, {
+          "xaxis.range": [0, max_1d_height],
+          "yaxis.range": [start_t, end_t],
+        });
+
+        // async main
         Plotly.restyle(
-          gd_async,
+          gd_async_main,
           {
             x: [new_time_axis],
             y: [new_time_axis],
@@ -289,27 +335,28 @@
           },
           [0]
         );
-
-        const update1D = { x: [new_time_axis], y: [new_avg_z] };
-        const update1D_Right = { x: [new_avg_z], y: [new_time_axis] };
-
-        Plotly.restyle(gd_sync, update1D, [1]);
-        Plotly.restyle(gd_sync, update1D_Right, [2]);
-        Plotly.restyle(gd_async, update1D, [1]);
-        Plotly.restyle(gd_async, update1D_Right, [2]);
-
-        const rangeUpdate = {
+        Plotly.relayout(gd_async_main, {
           "xaxis.range": [start_t, end_t],
-          "xaxis2.range": [start_t, end_t],
-          "yaxis2.range": [start_t, end_t],
-          "yaxis3.range": [start_t, end_t],
-          "yaxis4.range": [start_t, end_t],
-          "yaxis.range": [0, max_1d_height],
-          "xaxis3.range": [0, max_1d_height],
-        };
+          "yaxis.range": [start_t, end_t],
+        });
 
-        Plotly.relayout(gd_sync, rangeUpdate);
-        Plotly.relayout(gd_async, rangeUpdate);
+        // async top
+        Plotly.restyle(gd_async_top, { x: [new_time_axis], y: [new_avg_z] }, [
+          0,
+        ]);
+        Plotly.relayout(gd_async_top, {
+          "xaxis.range": [start_t, end_t],
+          "yaxis.range": [0, max_1d_height],
+        });
+
+        // async right
+        Plotly.restyle(gd_async_right, { x: [new_avg_z], y: [new_time_axis] }, [
+          0,
+        ]);
+        Plotly.relayout(gd_async_right, {
+          "xaxis.range": [0, max_1d_height],
+          "yaxis.range": [start_t, end_t],
+        });
       };
 
       let isInitialized = false;
@@ -326,10 +373,8 @@
 
         if (script_url) {
           var script = document.createElement("script");
-          console.log("스크립트 찾음 적용 중");
           script.src = script_url;
           script.onload = function () {
-            console.log("그래프 적용 중2");
             renderPlots();
           };
           script.onerror = function () {
@@ -337,14 +382,12 @@
           };
           document.head.appendChild(script);
         } else {
-          console.log("그래프 그리는중");
           renderPlots();
         }
       };
 
       function renderPlots() {
         var pkg = window.__TEMP_PLOT_DATA__;
-
         if (!pkg) return;
 
         Promise.all([
@@ -361,16 +404,40 @@
             getConfig("3d_surface")
           ),
           Plotly.react(
-            gd_sync,
-            pkg.sync.data,
-            pkg.sync.layout,
+            gd_sync_main,
+            pkg.sync_main.data,
+            pkg.sync_main.layout,
             getConfig("sync_map")
           ),
           Plotly.react(
-            gd_async,
-            pkg.async.data,
-            pkg.async.layout,
+            gd_sync_top,
+            pkg.sync_top.data,
+            pkg.sync_top.layout,
+            noBar
+          ),
+          Plotly.react(
+            gd_sync_right,
+            pkg.sync_right.data,
+            pkg.sync_right.layout,
+            noBar
+          ),
+          Plotly.react(
+            gd_async_main,
+            pkg.async_main.data,
+            pkg.async_main.layout,
             getConfig("async_map")
+          ),
+          Plotly.react(
+            gd_async_top,
+            pkg.async_top.data,
+            pkg.async_top.layout,
+            noBar
+          ),
+          Plotly.react(
+            gd_async_right,
+            pkg.async_right.data,
+            pkg.async_right.layout,
+            noBar
           ),
         ])
           .then(() => {
@@ -386,85 +453,81 @@
             }
           })
           .catch((err) => {
-            console.log("❌ Plotly 렌더링 에러: " + err);
+            console.log("Plotly render error: " + err);
           });
       }
 
       function attachPlotlyEvents() {
         gd_hm.on("plotly_hover", function (data) {
-          const px = data.points[0].x;
-          const py = data.points[0].y;
-          const crosshair = [
-            {
-              type: "line",
-              xref: "x domain",
-              yref: "y",
-              x0: 0,
-              y0: py,
-              x1: 1,
-              y1: py,
-              line: { color: "white", width: 1, dash: "dot" },
-            },
-            {
-              type: "line",
-              xref: "x",
-              yref: "y domain",
-              x0: px,
-              y0: 0,
-              x1: px,
-              y1: 1,
-              line: { color: "white", width: 1, dash: "dot" },
-            },
-          ];
-          Plotly.relayout(gd_hm, { shapes: crosshair });
+          var px = data.points[0].x,
+            py = data.points[0].y;
+          Plotly.relayout(gd_hm, {
+            shapes: [
+              {
+                type: "line",
+                xref: "x domain",
+                yref: "y",
+                x0: 0,
+                y0: py,
+                x1: 1,
+                y1: py,
+                line: { color: "white", width: 1, dash: "dot" },
+              },
+              {
+                type: "line",
+                xref: "x",
+                yref: "y domain",
+                x0: px,
+                y0: 0,
+                x1: px,
+                y1: 1,
+                line: { color: "white", width: 1, dash: "dot" },
+              },
+            ],
+          });
         });
-
-        gd_hm.on("plotly_unhover", function (data) {
+        gd_hm.on("plotly_unhover", function () {
           Plotly.relayout(gd_hm, { shapes: [] });
         });
 
         gd_3d.on("plotly_click", function (data) {
-          var clickedName = data.points[0].fullData.name;
-          if (window.pyBridge) {
-            window.pyBridge.receive_sample_name(clickedName);
-          }
+          if (window.pyBridge)
+            window.pyBridge.receive_sample_name(data.points[0].fullData.name);
         });
-
         gd_3d.on("plotly_afterplot", function () {
-          requestAnimationFrame(() => {
+          requestAnimationFrame(function () {
             WebLoading.hide();
           });
         });
-
         gd_3d.on("plotly_hover", function (data) {
-          const px = data.points[0].x;
-          const py = data.points[0].y;
-          const crosshair = [
-            {
-              type: "line",
-              xref: "x domain",
-              yref: "y",
-              x0: 0,
-              y0: py,
-              x1: 1,
-              y1: py,
-              line: { color: "white", width: 1, dash: "dot" },
-            },
-            {
-              type: "line",
-              xref: "x",
-              yref: "y domain",
-              x0: px,
-              y0: 0,
-              x1: px,
-              y1: 1,
-              line: { color: "white", width: 1, dash: "dot" },
-            },
-          ];
-          Plotly.relayout(gd_hm, { shapes: crosshair });
+          var px = data.points[0].x,
+            py = data.points[0].y;
+          Plotly.relayout(gd_hm, {
+            shapes: [
+              {
+                type: "line",
+                xref: "x domain",
+                yref: "y",
+                x0: 0,
+                y0: py,
+                x1: 1,
+                y1: py,
+                line: { color: "white", width: 1, dash: "dot" },
+              },
+              {
+                type: "line",
+                xref: "x",
+                yref: "y domain",
+                x0: px,
+                y0: 0,
+                x1: px,
+                y1: 1,
+                line: { color: "white", width: 1, dash: "dot" },
+              },
+            ],
+          });
         });
-
-        gd_3d.on("plotly_unhover", function (data) {
+        gd_3d.on("plotly_unhover", function () {
           Plotly.relayout(gd_hm, { shapes: [] });
         });
       }
