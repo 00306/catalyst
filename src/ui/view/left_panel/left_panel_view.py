@@ -76,6 +76,8 @@ class LeftPanel(QWidget):
                 self.project_list.currentItemChanged.connect(self.on_current_item_changed)
                 self.project_list.itemClicked.connect(self.on_item_clicked)
                 self.refresh_project_list()
+                self.project_list.clearSelection()
+                self.project_list.clearFocus()
                 
                 list_layout.addWidget(self.project_list)
                 self.main_layout.addWidget(list_container, 1)
